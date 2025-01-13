@@ -24,12 +24,16 @@ import requests
 import pandas as pd
 
 url = "https://clinicaltrials.gov/api/v2/studies"
+titles = input("Query titles here: ")
+locations = input("Query locations here: ")
+status = input("Query status here: ")
+pageSize = input("Output page size here: ")
 params = { #https://clinicaltrials.gov/api/oas/v2 <- Check here for list of usable parameters
-    "query.titles": "COVID OR SARS", 
-    "query.locn": "United States OR Germany OR France OR Denmark OR Norway OR Sweden", #Add more countries
-    "filter.overallStatus": "RECRUITING,NOT_YET_RECRUITING,ENROLLING_BY_INVITATION,ACTIVE_NOT_RECRUITING,AVAILABLE,TEMPORARILY_NOT_AVAILABLE",
+    "query.titles": titles, 
+    "query.locn":  locations,#Add more countries ex. "United States OR Germany OR France OR Denmark OR Norway OR Sweden"
+    "filter.overallStatus": status,#ex. "RECRUITING,NOT_YET_RECRUITING,ENROLLING_BY_INVITATION,ACTIVE_NOT_RECRUITING,AVAILABLE,TEMPORARILY_NOT_AVAILABLE"
     #Figure out sponsors, etc.
-    "pageSize": 100
+    "pageSize": pageSize
 }
 
 # Initialize an empty list to store the data
