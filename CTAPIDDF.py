@@ -19,7 +19,7 @@
 #Port to CPP or JS                                  //OPTIONAL
 #GUI                                                //OPTIONAL
 #More accurate results                              //IN-PROGRESS
-
+from publicCompany import get_company_ticker, is_publicly_traded
 import requests
 import pandas as pd
 
@@ -31,8 +31,9 @@ pageSize = input("Output page size here: ")
 params = { #https://clinicaltrials.gov/api/oas/v2 <- Check here for list of usable parameters
     "query.titles": titles, 
     "query.locn":  locations,#Add more countries ex. "United States OR Germany OR France OR Denmark OR Norway OR Sweden"
-    "filter.overallStatus": status,#ex. "RECRUITING,NOT_YET_RECRUITING,ENROLLING_BY_INVITATION,ACTIVE_NOT_RECRUITING,AVAILABLE,TEMPORARILY_NOT_AVAILABLE"
+    "filter.overallStatus": "RECRUITING,NOT_YET_RECRUITING,ENROLLING_BY_INVITATION,ACTIVE_NOT_RECRUITING,AVAILABLE,TEMPORARILY_NOT_AVAILABLE",#ex. "RECRUITING,NOT_YET_RECRUITING,ENROLLING_BY_INVITATION,ACTIVE_NOT_RECRUITING,AVAILABLE,TEMPORARILY_NOT_AVAILABLE"
     #Figure out sponsors, etc.
+    #"query.spons": "Industry",
     "pageSize": pageSize
 }
 
@@ -60,6 +61,7 @@ while True:
             startDate = study['protocolSection']['statusModule'].get('startDateStruct', {}).get('date', 'Unknown Date')
             conditions = ', '.join(study['protocolSection']['conditionsModule'].get('conditions', ['No conditions listed']))
             acronym = study['protocolSection']['identificationModule'].get('acronym', 'Unknown')
+            sponsor = study['protocolSection']['sponsorCollaboratorsModule'].get('leadSponsor', {}).get('leadSponsor', 'Unknown')
 
             # Extract interventions safely
             interventions_list = study['protocolSection'].get('armsInterventionsModule', {}).get('interventions', [])
@@ -89,7 +91,9 @@ while True:
                 "Study First Post Date": studyFirstPostDate,
                 "Last Update Post Date": lastUpdatePostDate,
                 "Study Type": studyType,
-                "Phases": phases
+                "Phases": phases,
+                "Sponsory": sponsor,
+                "Publicly Traded": is_publicly_traded(get_company_ticker(sponsor))
             })
 
         # Check for nextPageToken and update the params or break the loop
