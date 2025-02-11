@@ -23,7 +23,7 @@ def get_company_ticker(company_name):
         if data['quotes']:
             for result in data['quotes']:
                 # Use fuzzy matching to compare company name with the result
-                if fuzz.ratio(company_name.lower(), result['shortname'].lower()) > 50:  # similarity threshold
+                if fuzz.ratio(company_name.lower(), result['shortname'].lower()) > 50:  # similarity thresholdFrederick R. Ueland, M.D.
                     return result['symbol']
         return None
     except Exception as e:

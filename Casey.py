@@ -23,6 +23,8 @@
 import requests
 import pandas as pd
 
+from publicCompany import get_company_ticker, is_publicly_traded
+
 url = "https://clinicaltrials.gov/api/v2/studies"
 pageCount = 0
 # titles = input("Query titles here (input 0 for all): ")
@@ -32,13 +34,14 @@ pageCount = 0
 
 query_parameters = ["titles", "locn", "lead"]
 params = {}
-print("Query parameters: titles, location(locn), pageSize, lead")
+print("AREA[MaximumAge]RANGE[5 years, MAX]")
+print("RECRUITING,NOT_YET_RECRUITING,ENROLLING_BY_INVITATION,ACTIVE_NOT_RECRUITING,AVAILABLE")
 print("Input '0' for all")
 for p in query_parameters:
     inp = input("Query " + p + " here: ")
     if inp != "0":
         params["query." + p] = inp
-filter_parameters = ["overallStatus"]
+filter_parameters = ["overallStatus", "advanced"]
 for p in filter_parameters:
     inp = input("Filter " + p + " here: ")
     if inp != "0":
@@ -100,11 +103,14 @@ while True:
             studyType = study['protocolSection']['designModule'].get('studyType', 'Unknown')
             phases = ', '.join(study['protocolSection']['designModule'].get('phases', ['Not Available']))
 
+            isTraded = is_publicly_traded(leadSpons["name"])
+            ticker = get_company_ticker(leadSpons["name"])
+
             # Append the data to the list as a dictionary
             dataList.append({
                 "NCT ID": nctId,
                 "Acronym": acronym,
-                "Sponsor": leadSpons,
+                "Sponsor": leadSpons["name"],
                 "Overall Status": overallStatus,
                 "Start Date": startDate,
                 "Conditions": conditions,
@@ -114,7 +120,9 @@ while True:
                 "Study First Post Date": studyFirstPostDate,
                 "Last Update Post Date": lastUpdatePostDate,
                 "Study Type": studyType,
-                "Phases": phases
+                "Phases": phases,
+                "Publicly Traded": isTraded,
+                "Ticker": ticker
             })
 
         # Check for nextPageToken and update the params or break the loop

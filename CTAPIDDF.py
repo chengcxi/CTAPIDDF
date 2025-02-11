@@ -19,7 +19,7 @@
 #Port to CPP or JS                                  //OPTIONAL
 #GUI                                                //OPTIONAL
 #More accurate results                              //IN-PROGRESS
-from publicCompany import get_company_ticker, is_publicly_traded
+from CTAPIDDF.publicCompany import get_company_ticker, is_publicly_traded
 import requests
 import pandas as pd
 
