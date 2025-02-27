@@ -19,7 +19,7 @@
 #Port to CPP or JS                                  //OPTIONAL
 #GUI                                                //OPTIONAL
 #More accurate results                              //IN-PROGRESS
-
+from publicCompany import get_company_ticker, is_publicly_traded
 import requests
 import pandas as pd
 
@@ -87,6 +87,7 @@ while True:
             conditions = ', '.join(study['protocolSection']['conditionsModule'].get('conditions', ['No conditions listed']))
             acronym = study['protocolSection']['identificationModule'].get('acronym', 'Unknown')
             leadSpons = study['protocolSection']['sponsorCollaboratorsModule'].get('leadSponsor', 'Unknown')
+            sponsor = leadSpons["name"]
 
             # Extract interventions safely
             interventions_list = study['protocolSection'].get('armsInterventionsModule', {}).get('interventions', [])

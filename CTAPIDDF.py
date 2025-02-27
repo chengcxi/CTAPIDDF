@@ -92,7 +92,7 @@ while True:
                 "Last Update Post Date": lastUpdatePostDate,
                 "Study Type": studyType,
                 "Phases": phases,
-                "Sponsory": sponsor,
+                "Sponsor": sponsor,
                 "Publicly Traded": is_publicly_traded(get_company_ticker(sponsor))
             })
 

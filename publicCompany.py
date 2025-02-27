@@ -1,87 +1,82 @@
 import yfinance as yf
-from fuzzywuzzy import fuzz
 import requests
-import json
+from bs4 import BeautifulSoup
+import re
 
-def get_company_ticker(company_name):
-    """
-    Search for the company's stock ticker using Yahoo Finance API.
-    """
+def get_ticker_and_public_status(company_name):
     try:
-        # Replace spaces with '+' for the search query
-        search_query = company_name.replace(" ", "+")
-        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={search_query}"
-        
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-        
-        response = requests.get(url, headers=headers)
-        data = response.json()
+        # 1.  Try a direct yfinance lookup (most reliable for known tickers/names)
+        ticker_obj = yf.Ticker(company_name)
+        info = ticker_obj.info  # Accessing .info can raise an exception
 
-        # Check if there are any results
-        if data['quotes']:
-            for result in data['quotes']:
-                # Use fuzzy matching to compare company name with the result
-                if fuzz.ratio(company_name.lower(), result['shortname'].lower()) > 50:  # similarity thresholdFrederick R. Ueland, M.D.
-                    return result['symbol']
-        return None
+        # Check for valid info and a reasonable market cap (to avoid penny stocks/weird results)
+        if "currentPrice" in info and info.get("marketCap") is not None:
+            return True, company_name, None  # Assume input was the ticker
+
+        # 2. Search on Yahoo Finance (handles company names better)
+        search_url = f"https://finance.yahoo.com/lookup?s={company_name}"
+        response = requests.get(search_url)
+        response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Find the first ticker symbol result.  Yahoo Finance's structure can change,
+        # so this needs to be robust.  We look for a table, then rows, then cells.
+        table = soup.find('table')
+        if not table:
+            return False, None, "No results found on Yahoo Finance."
+
+        rows = table.find_all('tr')
+        for row in rows:
+            cells = row.find_all('td')
+            if cells:
+                # The ticker is usually in the first cell, company name in the second.
+                ticker_text = cells[0].text.strip()
+                company_name_text = cells[1].text.strip()
+
+                # Basic validation – check for a ticker-like pattern (mostly letters, maybe some periods/dashes)
+                if re.match(r"^[A-Z.\-^]+$", ticker_text):
+                  # Double check with yfinance
+                  try:
+                    ticker_object = yf.Ticker(ticker_text)
+                    test_info = ticker_object.info
+                    if "currentPrice" in test_info and test_info.get("marketCap") is not None:
+                      return True, ticker_text, None
+                  except:
+                    continue #try next result
+        return False, None, "No public ticker found on Yahoo Finance."
+
+
+    except requests.exceptions.RequestException as e:
+        return None, None, f"Network error: {e}"
+    except (KeyError, ValueError, TypeError) as e:
+        # yfinance sometimes throws KeyErrors if data is missing, or ValueErrors.
+        return None, None, f"Error retrieving data from yfinance: {e} (Possibly not a public company or invalid ticker)"
     except Exception as e:
-        print(f"Error searching for ticker: {e}")
-        return None
+        return None, None, f"An unexpected error occurred: {e}"
 
-def is_publicly_traded(company_name):
-    """
-    Check if the company is publicly traded by fetching stock information.
-    """
-    try:
-        # Get the ticker symbol for the company
-        ticker_symbol = get_company_ticker(company_name)
-        
-        if ticker_symbol:
-            # Fetch stock data using yfinance
-            stock = yf.Ticker(ticker_symbol)
-            stock_info = stock.info
 
-            # Check if the stock info contains valid data
-            if stock_info and 'shortName' in stock_info and stock_info['shortName']:
-                print(f"\nCompany: {stock_info['shortName']}")
-                print(f"Ticker: {ticker_symbol}")
-                print(f"Exchange: {stock_info.get('exchange', 'N/A')}")
-                print(f"Sector: {stock_info.get('sector', 'N/A')}")
-                print(f"Market Cap: {stock_info.get('marketCap', 'N/A')}")
-                return True
-            else:
-                print(f"\nNo valid stock information found for {company_name}.")
-                return False
-        else:
-            print(f"\nCould not find a ticker symbol for {company_name}.")
-            return False
-    except Exception as e:
-        print(f"\nError checking company: {e}")
-        return False
 
 def main():
-    print("Check if a company is publicly traded")
-    print("-------------------------------------")
-    
+    """Gets company name input from the user and prints the results."""
+
     while True:
-        company_name = input("\nEnter the company name (or 'quit' to exit): ").strip()
-        
+        company_name = input("Enter the company name (or 'quit' to exit): ").strip()
         if company_name.lower() == 'quit':
-            print("Exiting...")
             break
-        
-        if not company_name:
-            print("Please enter a valid company name.")
-            continue
-        
-        print(f"\nChecking if {company_name} is publicly traded...")
-        
-        if is_publicly_traded(company_name):
-            print(f"\n{company_name} is a publicly traded company.")
-        else:
-            print(f"\n{company_name} is not a publicly traded company or could not be found.")
+
+        is_public, ticker, error_message = get_ticker_and_public_status(company_name)
+
+        if is_public is True:
+            print(f"'{company_name}' appears to be a public company.")
+            print(f"Ticker symbol: {ticker}")
+        elif is_public is False:
+            if error_message:
+                print(error_message)
+            else:
+                print(f"'{company_name}' does not appear to be a publicly traded company.")
+        else:  # is_public is None (error case)
+            print(f"Error: {error_message}")
+        print("-" * 30)
 
 if __name__ == "__main__":
     main()
