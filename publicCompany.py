@@ -2,7 +2,11 @@ import yfinance as yf
 import requests
 from bs4 import BeautifulSoup
 import re
+import time # For sleeping between requests
+import math
 
+
+#Maybe need to sleep for a few seconds to avoid being blocked by Yahoo Finance
 def get_ticker_and_public_status(company_name):
     try:
         # 1.  Try a direct yfinance lookup (most reliable for known tickers/names)
@@ -63,7 +67,9 @@ def main():
         company_name = input("Enter the company name (or 'quit' to exit): ").strip()
         if company_name.lower() == 'quit':
             break
-
+        
+        random = math.floor(1, 5)
+        time.sleep(random) # Sleep for a random amount of time (1-5 seconds)
         is_public, ticker, error_message = get_ticker_and_public_status(company_name)
 
         if is_public is True:
